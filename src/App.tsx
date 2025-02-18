@@ -1,7 +1,20 @@
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+  Image,
+  Animated,
+  useAnimatedValue,
+} from "react-native";
 import React, {useEffect, useState} from "react";
 import {heightPercentageToDP as hp, widthPercentageToDP as wp} from "react-native-responsive-screen";
-import {MMKVLoader, useMMKVStorage} from "react-native-mmkv-storage";
+import {MMKVLoader} from "react-native-mmkv-storage";
+import BouncyCheckbox from "react-native-bouncy-checkbox";
+import {BACKGROUND_COLOR, DARK_COLOR, LIGHT_COLOR, LIGHT_COLOR2, PRIMARY_COLOR} from "../styles/colors";
 
 interface Todo {
   id: number;
@@ -18,7 +31,6 @@ const App = () => {
   useEffect(() => {
     if (todolist.length === 0) {
       const mmkvStorage = MMKV.getArray("todolist");
-      console.log("mmkvStorage: ", mmkvStorage);
       if (mmkvStorage) {
         setTodoList(mmkvStorage as Todo[]);
       }
@@ -27,65 +39,74 @@ const App = () => {
 
   useEffect(() => {
     if (todolist != undefined) {
-      console.log("todo ", todolist);
       MMKV.setArray("todolist", todolist);
-
-      const mmkvStorage = MMKV.getArray("todolist");
-      console.log("mmkvStorage: ", mmkvStorage);
     }
   }, [todolist]);
 
   const onHandleAdd = () => {
-    const itemTodo = {
-      id: todolist.length + 1,
-      label: input,
-      mark: 0,
-    };
-    setTodoList(prev => [itemTodo, ...prev]);
-    setInput("");
+    const trimmedInput = input.trim();
+    if (trimmedInput !== "") {
+      const todoItem: Todo = {
+        id: Date.now(),
+        label: trimmedInput,
+        mark: 0,
+      };
+      setTodoList(prev => {
+        prev = [todoItem, ...prev];
+        return prev;
+      });
+      setInput("");
+    }
   };
 
   const onHandleDelete = (id: number) => {
-    const updatedTodo = todolist.filter(item => item.id !== id);
-    setTodoList(updatedTodo);
+    setTodoList(prev => {
+      const index = prev.findIndex(item => item.id === id);
+      if (index === -1) return prev;
+      const _item = [...prev];
+      _item.splice(index, 1);
+      return _item;
+    });
   };
 
-  const onHandleMark = (item: Todo, index: number) => {
-    const updatedTodos = todolist.map(todo => (todo.id === item.id ? {...todo, mark: todo.mark === 1 ? 0 : 1} : todo));
-
-    setTodoList(updatedTodos);
+  const onHandleMark = (id: number) => {
+    setTodoList(prev => {
+      const index = prev.findIndex(item => item.id === id);
+      if (index === -1) return prev;
+      const _item = [...prev];
+      _item[index] = {..._item[index], mark: _item[index].mark === 0 ? 1 : 0};
+      return _item;
+    });
   };
 
   const renderTodoList = ({item, index}: {item: Todo; index: number}) => (
-    <View
-      style={{
-        width: wp("100%"),
-        padding: wp("4%"),
-        borderWidth: 1,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}>
-      <Text style={styles.label}>{item.label}</Text>
-      <View style={{flexDirection: "row", justifyContent: "space-between", gap: wp("2%")}}>
-        <TouchableOpacity
-          style={{
-            backgroundColor: item.mark === 0 ? "lightgrey" : "lightgreen",
-            padding: wp("2%"),
-            borderRadius: wp("100%"),
+    <View style={[styles.card, {marginTop: index === 0 ? hp("2%") : 0}]}>
+      <View style={{flex: 1}}>
+        <BouncyCheckbox
+          text={item.label}
+          textStyle={{
+            fontWeight: "600",
+            fontSize: wp("5%"),
+            color: item.mark === 0 ? DARK_COLOR : LIGHT_COLOR,
+            textDecorationColor: "red",
           }}
-          onPress={() => onHandleMark(item, index)}>
-          <Text>{item.mark === 0 ? "Mark" : "Done"}</Text>
+          unFillColor={BACKGROUND_COLOR}
+          fillColor={PRIMARY_COLOR}
+          innerIconStyle={{borderWidth: 0}}
+          useNativeDriver={true}
+          isChecked={item.mark === 1}
+          onPress={() => onHandleMark(item.id)}
+          onLongPress={() => onHandleMark(item.id)}
+        />
+      </View>
+
+      <View style={{flexDirection: "row", gap: wp("2%"), justifyContent: "center", padding: wp("1%")}}>
+        <TouchableOpacity onPress={() => {}}>
+          <Image source={require("../assets/icons/edit.png")} style={styles.edit_icon} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => onHandleDelete(item.id)}
-          style={{
-            backgroundColor: "red",
-            padding: wp("2%"),
-            borderRadius: wp("100%"),
-          }}>
-          <Text style={{color: "white"}}>Delete</Text>
+        <TouchableOpacity onPress={() => onHandleDelete(item.id)}>
+          <Image source={require("../assets/icons/trash.png")} style={styles.delete_icon} />
         </TouchableOpacity>
       </View>
     </View>
@@ -93,16 +114,17 @@ const App = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.contentTitle}>
+      <View style={{backgroundColor: "#fff", alignItems: "center", paddingVertical: hp("2%")}}>
         <Text style={styles.title}>To-Do List</Text>
+        <View style={styles.rowInput}>
+          <TextInput value={input} onChangeText={setInput} style={styles.input} cursorColor={PRIMARY_COLOR} />
+          <TouchableOpacity onPress={onHandleAdd}>
+            <Image source={require("../assets/icons/add.png")} style={styles.add_icon} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.rowInput}>
-        <TextInput value={input} onChangeText={setInput} style={styles.input} />
-        <TouchableOpacity onPress={onHandleAdd} style={styles.button}>
-          <Text>Add</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={{marginTop: hp("2%")}}>
+
+      <View style={{flex: 1, backgroundColor: BACKGROUND_COLOR, width: wp("100%")}}>
         <FlatList data={todolist} renderItem={renderTodoList} keyExtractor={(_, index) => index.toString()} />
       </View>
     </View>
@@ -113,33 +135,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-  },
-  contentTitle: {
-    paddingVertical: hp("2%"),
+    backgroundColor: BACKGROUND_COLOR,
   },
   title: {
     fontSize: wp("7%"),
     fontWeight: "bold",
+    color: DARK_COLOR,
   },
   rowInput: {
+    width: wp("100%"),
+    paddingTop: wp("5%"),
+    paddingHorizontal: wp("3%"),
     flexDirection: "row",
-    gap: wp("5%"),
+    gap: wp("2%"),
     alignItems: "center",
+    backgroundColor: "#fff",
   },
   input: {
+    flex: 1,
+    paddingHorizontal: wp("3%"),
     borderRadius: wp("4%"),
-    backgroundColor: "lightgrey",
-    width: wp("70%"),
+    backgroundColor: LIGHT_COLOR2,
+    // width: wp("70%"),
     fontSize: wp("5%"),
+    fontWeight: "600",
+    color: DARK_COLOR,
   },
   label: {
     fontSize: wp("5%"),
   },
-  button: {
-    paddingVertical: hp("1%"),
+
+  card: {
+    backgroundColor: "#fff",
+    paddingVertical: hp("2%"),
     paddingHorizontal: wp("5%"),
-    backgroundColor: "lightblue",
-    borderRadius: wp("100%"),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: hp("2%"),
+    marginHorizontal: wp("3%"),
+    borderRadius: wp("5%"),
+  },
+  add_icon: {
+    width: wp("10%"),
+    height: wp("10%"),
+  },
+  edit_icon: {
+    width: wp("5.5%"),
+    height: wp("5.5%"),
+  },
+  delete_icon: {
+    width: wp("6%"),
+    height: wp("6%"),
   },
 });
 
