@@ -1,15 +1,4 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  Image,
-  Animated,
-  useAnimatedValue,
-} from "react-native";
+import {View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image} from "react-native";
 import React, {useEffect, useState} from "react";
 import {heightPercentageToDP as hp, widthPercentageToDP as wp} from "react-native-responsive-screen";
 import {MMKVLoader} from "react-native-mmkv-storage";
@@ -101,9 +90,9 @@ const App = () => {
       </View>
 
       <View style={{flexDirection: "row", gap: wp("2%"), justifyContent: "center", padding: wp("1%")}}>
-        <TouchableOpacity onPress={() => {}}>
+        {/* <TouchableOpacity onPress={() => {}}>
           <Image source={require("../assets/icons/edit.png")} style={styles.edit_icon} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity onPress={() => onHandleDelete(item.id)}>
           <Image source={require("../assets/icons/trash.png")} style={styles.delete_icon} />
@@ -156,7 +145,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp("3%"),
     borderRadius: wp("4%"),
     backgroundColor: LIGHT_COLOR2,
-    // width: wp("70%"),
     fontSize: wp("5%"),
     fontWeight: "600",
     color: DARK_COLOR,
